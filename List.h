@@ -18,27 +18,87 @@ private:
 
 public:
   List() : front(nullptr), back(nullptr), size(0) {}
+  
+  // Copy Constructor
+  List(const List& other);
+  
+  // Move constructor
+  List(List&& other);
+
+  // copy assignment operator
+  List& operator=(const List& rhs);
+  
+  // Move assignment operator
+  List& operator=(List&& rhs);
+
   // push value to the front of the linked list
   void push_front(const T&);
+
   //push value to the back of the linked list
   void push_back(const T&);
+
   // pup value off the front of the linked list
   T pop_front();
+
   // pop value off the back of the linked list
   T pop_back();
+  
+  // returns the number of elements in the list
+  int getSize();
   
   // forward iterator
   class iterator;
 
   // inserts value in front of provided iterator
   void insert(List<T>::iterator, const T&);
+
   // returns an iterator pointed at the beginning of the list
   iterator begin() { return iterator{front}; }
+
   // returns a null pointer signifying the end of the list
   iterator end() { return iterator{nullptr}; }
 };
 
-/******* Class Implementation ******/
+
+/******************* Class Implementation *******************/
+
+// Copy Constructor
+template <class T>
+List<T>::List(const List& other) : front{nullptr}, back{nullptr}, size(0) {
+  *this = other;
+}
+
+// Move constructor
+template <class T>
+List<T>::List(List&& rhs) {
+  *this = std::move(rhs);
+}
+
+// copy assignment operator
+template <class T>
+List<T>& List<T>::operator=(const List& rhs) {
+  if(this != &rhs) {
+    Node *tmp = rhs.front;
+    while(tmp != nullptr){
+      push_back(tmp->data);
+      tmp = tmp->next;
+    }
+  }
+  return *this;
+}
+
+// Move assignment operator
+template <class T>
+List<T>& List<T>::operator=(List&& rhs) {
+  if(this != &rhs) {
+    front = rhs.front;
+    back = rhs.back;
+    size = rhs.size;
+    rhs.size = 0;
+    rhs.front = rhs.back = nullptr;
+  }
+  return *this;
+}
 
 template <class T>
 void List<T>::push_front(const T& val) {
@@ -96,6 +156,11 @@ T List<T>::pop_back() {
   return val;
 }
 
+template<class T>
+int List<T>::getSize() {
+  return size;
+}
+
 template <class T>
 class List<T>::iterator : public std::iterator<std::forward_iterator_tag, T> {
 protected:
@@ -138,11 +203,10 @@ void List<T>::insert(List<T>::iterator it, const T& val) {
     else 
       it.curptr->previous->next = tmp;
     it.curptr->previous = tmp;
+    size++;
   } else {
     throw "Null iterator";
   }
 }
-
-
 
 #endif
