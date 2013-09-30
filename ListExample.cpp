@@ -21,6 +21,10 @@ int main() {
   for(it = l.begin(); it!=l.end(); ++it)
     std::cout << *it << std::endl;
   
+  // ranged increment of list
+  for(int &i : l)
+    i++;
+
   // ranged for loop
   std::cout << std::endl;
   for(int i : l)
