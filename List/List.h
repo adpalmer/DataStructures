@@ -171,7 +171,10 @@ public:
   iterator(Node *p) : curptr{p} {}
   iterator(const iterator& it) : curptr{it.curptr} {}
   ~iterator() {}
-  iterator& operator=(const iterator& other) {curptr = other.curptr;}
+  iterator& operator=(const iterator& other) {
+    curptr = other.curptr;
+    return *this;
+  }
   bool operator==(const iterator& other) {return curptr == other.curptr;}
   bool operator!=(const iterator& other) {return curptr != other.curptr;}
   iterator& operator++() {
