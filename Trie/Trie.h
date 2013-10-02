@@ -2,6 +2,8 @@
 #define Trie_
 
 #include <iostream>
+#include <functional>
+#include <list>
 using namespace std;
 
 #define BRANCH_CNT 26
@@ -28,22 +30,62 @@ class Trie {
       };
       Node *head;
 
-      void print(Node *x, string s);
+      void inOrder(Node *x, string s, std::function<void(std::string)> f);
+      void clear(Node *t);
 
    public:
-      Trie() {
-         head = new Node;
-      }
+      Trie();
+      Trie(const Trie&);
+      Trie(Trie&&);
+      Trie& operator=(const Trie&);
+      Trie& operator=(Trie&&);
       ~Trie() {
         clear(head);
       }
-      void clear(Node *t);
       bool insert(string x);
+      bool del(string x);
       bool exists(string x);
       bool partialMatch(string x);
       void print();
-      class iterator;
+      // returns list of of all valid strings in the trie
+      std::list<std::string> getList();
 };
+
+/*********** Trie Implementation *************/
+
+Trie::Trie() : head{new Node} {}
+
+// copy constructor
+Trie::Trie(const Trie& other) : head{new Node} {
+  inOrder(other.head, "", [this](std::string s){insert(s);});
+}
+
+// move constructor
+Trie::Trie(Trie&& other) : head{new Node} {
+  head = other.head;
+  other.head = nullptr;
+}
+
+Trie& Trie::operator=(const Trie& other) {
+  if(head != other.head) {
+    if(head) {
+      clear(head);
+    }
+    head = new Node;
+    inOrder(other.head, "", [this](std::string s){ insert(s); });
+  }
+  return *this;
+}
+
+Trie& Trie::operator=(Trie&& other) {
+  if(head != other.head) {
+    if(head) {
+      clear(head);
+    }
+    head = other.head;
+    other.head = nullptr;
+  }
+}
 
 void Trie::clear(Trie::Node *t) {
   if(t != NULL) {
@@ -55,29 +97,71 @@ void Trie::clear(Trie::Node *t) {
 }
 
 bool Trie::insert(string x) {
-   Node *tmp = head;
-   int index;
-   for( int i=0; i<x.length(); i++ ) {
-      index = (int)tolower(x[i]) - 97;
-      if( index < 0 || index >= 26 )
-         return false;
-      if( tmp->children[index] ) {
-         tmp = tmp->children[index];
-      } else {
-         tmp->children[index] = new Node;
-         tmp->children[index]->parent = tmp;
-         tmp->childrenCnt++;
-         if( !tmp->children[index] ) {
-            return false;
-         }
-         tmp = tmp->children[index];
-      }
-   }
-   tmp->valid = true;
-   return true;
+  // if head is a nullptr, someone must have moved using std::move
+  if(!head)
+    head = new Node;
+
+  Node *tmp = head;
+  int index;
+  for( int i=0; i<x.length(); i++ ) {
+    index = (int)tolower(x[i]) - 97;
+    if( index < 0 || index >= BRANCH_CNT )
+       return false;
+    if( tmp->children[index] ) {
+       tmp = tmp->children[index];
+    } else {
+       tmp->children[index] = new Node;
+       tmp->children[index]->parent = tmp;
+       tmp->childrenCnt++;
+       if( !tmp->children[index] ) {
+          return false;
+       }
+       tmp = tmp->children[index];
+    }
+  }
+  tmp->valid = true;
+  return true;
+}
+
+bool Trie::del(string x) {
+  // if head is a nullptr, someone must have moved using std::move
+  if(!head)
+    return false;
+  Node *tmp = head;
+  Node *tmp2;
+  int index;
+  for(int i=0; i<x.length(); i++) {
+    index = (int)tolower(x[i])-97;
+    if(index < 0 || index >= BRANCH_CNT) 
+      return false;
+    if(tmp->children[index]) {
+      tmp = tmp->children[index];
+    }
+  }
+  tmp->valid = false;
+
+  // while tmp (to prevent segfault), tmp is invalid and it has zero children. Delete and climb
+  // the tree
+  int cnt = 0; // cnt used to find correct index to reset to null
+  while(tmp && !tmp->valid && tmp->childrenCnt == 0) {
+    tmp2 = tmp->parent;
+    delete tmp;
+    tmp = tmp2;
+    // just deleted a child so decrement count
+    tmp->childrenCnt--;
+    cnt++;
+  }
+  index = (int)tolower(x[x.length()-cnt])-97;
+  tmp->children[index] = nullptr;
+  return true;
+
 }
 
 bool Trie::partialMatch(string x) {
+  // if head is a nullptr, someone must have moved using std::move
+  if(!head)
+    return false;
+
    Node *tmp = head;
    int index;
    for( int i=0; i<x.length(); i++ ) {
@@ -94,6 +178,10 @@ bool Trie::partialMatch(string x) {
 }
 
 bool Trie::exists(string x) {
+  // if head is a nullptr, someone must have moved using std::move
+  if(!head)
+    return false;
+
    Node *tmp = head;
    int index;
    for( int i=0; i<x.length(); i++ ) {
@@ -110,66 +198,31 @@ bool Trie::exists(string x) {
    return false;
 }
 
-void Trie::print() {
-   print(head, "");
+// returns list of of all valid strings in the trie
+std::list<std::string> Trie::getList() {
+  std::list<std::string> l;
+  inOrder(head, "", [&l](std::string s){l.push_back(s);});
+  return l;
 }
 
-void Trie::print(Node *x, string s) {
+// For each valid string print the string followed by a newline
+// this is done in alphabetical order
+void Trie::print() {
+   inOrder(head, "", [](std::string s){std::cout << s << std::endl;});
+}
+
+// recursive function takes function f and operates on it in order. Can be used for anything from printing to list building
+// input: Node*, string, std::function<void(std::string)>
+void Trie::inOrder(Node *x, string s, std::function<void(std::string)> f) {
+   if( x->valid ) {
+      f(s);
+   }
    for( int i=0; i<BRANCH_CNT; i++ ) {
       if( x->children[i] ) {
-         print(x->children[i], s + char(i+97));
+         inOrder(x->children[i], s + char(i+97), f);
       }
-   }
-   if( x->valid ) {
-      cout << s << endl;
    }
 }
 
-class Trie::iterator : public std::iterator<std::forward_iterator_tag, std::string> {
-protected:
-  Node *curptr;
-  bool down;
-  char letter;
-  std::string str;
-public:
-  iterator() : curptr{nullptr}, down{true}, letter{"a"}, str{"a"} {}
-  iterator(Node *p) : curptr{p}, down{true}, letter{"a"}, str{"a"} {}
-  iterator(const iterator& it) : curptr{it.curptr}, down{it.down}, letter{it.letter}, str{a} {}
-  iterator(iterator&& it) : curptr{it.curptr}, down{it.down}, letter{it.letter}, str{a} {it.curptr = nullptr;}
-  ~iterator(){}
-  iterator& operator=(const iterator& other) {
-    curptr = other.curptr;
-    down = other.down;
-    letter = other.letter;
-    str = other.str;
-    return *this;
-  }
-  iterator& operator=(iterator&& other) {
-    if(curptr != other.curptr) {
-      curptr = other.curptr;
-      down = other.down;
-      letter = other.letter;
-      str = other.str;
-      other.curptr = nullptr;
-    }
-    return *this;
-  }
-  bool operator==(const iterator& other) {return curptr == other.curptr;}
-  bool operator!=(const iterator& other) {return curptr != other.curptr;}
-  iterator& operator++() {
-    /******* Needs to have a reference to parent ******/
-
-
-
-  }
-  iterator operator++(int) {
-    iterator tmp(*this);
-    operator++();
-    return tmp;
-  }
-  std::string& operator*() {
-    /******** INFORMATION TO RETURN *********/
-  }
-};
 
 #endif
