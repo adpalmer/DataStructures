@@ -84,6 +84,7 @@ Trie& Trie::operator=(Trie&& other) {
     head = other.head;
     other.head = nullptr;
   }
+  return *this;
 }
 
 void Trie::clear(Trie::Node *t) {
