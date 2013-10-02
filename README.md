@@ -1,4 +1,4 @@
 DataStructures
 ==============
 
-Different Datastructures
+Different Data Structures
