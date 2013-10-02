@@ -4,7 +4,6 @@
 #include <iostream>
 #include <functional>
 #include <list>
-using namespace std;
 
 #define BRANCH_CNT 26
 
@@ -30,7 +29,7 @@ class Trie {
       };
       Node *head;
 
-      void inOrder(Node *x, string s, std::function<void(std::string)> f);
+      void inOrder(Node *x, std::string s, std::function<void(std::string)> f);
       void clear(Node *t);
 
    public:
@@ -42,12 +41,12 @@ class Trie {
       ~Trie() {
         clear(head);
       }
-      bool insert(string x);
-      bool del(string x);
-      bool exists(string x);
-      bool partialMatch(string x);
+      bool insert(std::string x);
+      bool del(std::string x);
+      bool exists(std::string x);
+      bool partialMatch(std::string x);
       void print();
-      // returns list of of all valid strings in the trie
+      // returns list of of all valid std::strings in the trie
       std::list<std::string> getList();
 };
 
@@ -96,7 +95,7 @@ void Trie::clear(Trie::Node *t) {
   }
 }
 
-bool Trie::insert(string x) {
+bool Trie::insert(std::string x) {
   // if head is a nullptr, someone must have moved using std::move
   if(!head)
     head = new Node;
@@ -123,7 +122,7 @@ bool Trie::insert(string x) {
   return true;
 }
 
-bool Trie::del(string x) {
+bool Trie::del(std::string x) {
   // if head is a nullptr, someone must have moved using std::move
   if(!head)
     return false;
@@ -157,7 +156,7 @@ bool Trie::del(string x) {
 
 }
 
-bool Trie::partialMatch(string x) {
+bool Trie::partialMatch(std::string x) {
   // if head is a nullptr, someone must have moved using std::move
   if(!head)
     return false;
@@ -177,7 +176,7 @@ bool Trie::partialMatch(string x) {
    return true;
 }
 
-bool Trie::exists(string x) {
+bool Trie::exists(std::string x) {
   // if head is a nullptr, someone must have moved using std::move
   if(!head)
     return false;
@@ -198,22 +197,22 @@ bool Trie::exists(string x) {
    return false;
 }
 
-// returns list of of all valid strings in the trie
+// returns list of of all valid std::strings in the trie
 std::list<std::string> Trie::getList() {
   std::list<std::string> l;
   inOrder(head, "", [&l](std::string s){l.push_back(s);});
   return l;
 }
 
-// For each valid string print the string followed by a newline
+// For each valid std::string print the std::string followed by a newline
 // this is done in alphabetical order
 void Trie::print() {
    inOrder(head, "", [](std::string s){std::cout << s << std::endl;});
 }
 
 // recursive function takes function f and operates on it in order. Can be used for anything from printing to list building
-// input: Node*, string, std::function<void(std::string)>
-void Trie::inOrder(Node *x, string s, std::function<void(std::string)> f) {
+// input: Node*, std::string, std::function<void(std::string)>
+void Trie::inOrder(Node *x, std::string s, std::function<void(std::string)> f) {
    if( x->valid ) {
       f(s);
    }
