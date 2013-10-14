@@ -27,8 +27,9 @@ public:
   class iterator;
   iterator begin() {
     Node *tmp = head;
-    while(tmp->left != nullptr)
+    while(tmp && tmp->left != nullptr){
       tmp = tmp->left;
+    }
     return iterator{tmp};
   }
   iterator end() { return iterator{nullptr};}
@@ -82,12 +83,13 @@ bst<Key,T>& bst<Key,T>::operator=(bst&& rhs) {
 
 template <class Key, class T>
 bst<Key,T>::~bst() {
-  clear(head);
+  clear();
 }
 
 template <class Key, class T>
 void bst<Key,T>::clear() {
   clear(head);
+  head = nullptr;
 }
 
 template <class Key, class T>
