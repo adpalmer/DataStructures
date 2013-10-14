@@ -8,7 +8,7 @@
 template <class Key, class T>
 class bst {
 private:
-  struct Node;
+  class Node;
   Node *head;
   unsigned int size;
 
@@ -41,6 +41,7 @@ public:
   void clear();
   void insert(const std::pair<Key,T>&);
   iterator find(const Key& k);
+  //iterator erase(const iterator& it);
   void preOrder(std::function<void(const std::pair<Key,T>&)>);
   void inOrder(std::function<void(const std::pair<Key,T>&)>);
   void postOrder(std::function<void(const std::pair<Key,T>&)>);
@@ -101,10 +102,18 @@ void bst<Key,T>::clear(Node *tmp) {
 
 // Node definition
 template <class Key, class T>
-struct bst<Key,T>::Node {
+class bst<Key,T>::Node {
 public:
-  std::pair<Key, T> data;
+  std::pair<Key, T> *data;
   Node *left, *right, *parent;
+  Node() {
+    data = new std::pair<Key,T>;
+    left = right = parent = nullptr;
+  }
+  ~Node() {
+    if(data != nullptr)
+      delete data;
+  }
 };
 
 template <class Key, class T>
@@ -118,36 +127,61 @@ T& bst<Key,T>::pvtInsert(const std::pair<Key,T>& d) {
   Node **tmp = &head;
   while(*tmp != nullptr) {
     parent = *tmp;
-    if(d.first > (*tmp)->data.first) {
+    if(d.first > (*tmp)->data->first) {
       tmp = &((*tmp)->right);
-    } else if(d.first < (*tmp)->data.first) {
+    } else if(d.first < (*tmp)->data->first) {
       tmp = &((*tmp)->left);
     } else { // already exists
-      return ((*tmp)->data).second;
+      return ((*tmp)->data)->second;
     }
   }
 
   Node *data = new Node;
-  data->data = d;
+  data->data->first = d.first;
+  data->data->second = d.second;
   data->left = data->right = nullptr;
   data->parent = parent;
   *tmp = data;
   size++;
-  return (data->data).second;
+  return data->data->second;
 }
 
 template <class Key, class T>
 typename bst<Key,T>::iterator bst<Key,T>::find(const Key& k) {
   Node *tmp = head;
-  while(tmp != nullptr && k != tmp->data.first) {
-    if(k > tmp->data.first) {
+  while(tmp != nullptr && k != tmp->data->first) {
+    if(k > tmp->data->first) {
       tmp = tmp->right;
-    } else if(k < tmp->data.first) {
+    } else if(k < tmp->data->first) {
       tmp = tmp->left;
     }
   }
   return iterator{tmp};
 }
+
+/*
+template <class Key, class T>
+typename bst<Key,T>::iterator bst<Key,T>::erase(const bst<Key,T>::iterator& it) {
+  Node *tmp = iterator.curptr;
+  Node *trail;
+  if(tmp->left != nullptr && tmp->right != nullptr) {
+    tmp = tmp->right;
+    while(tmp->left != nullptr) {
+      trail = tmp;
+      tmp = tmp->left;
+    }
+    trail->left = nullptr;
+    tmp->parent = iterator.curptr->parent;
+    tmp->left = iterator.curptr->left;
+    tmp->right = nullptr;
+    if(iterator.curptr->right != tmp)
+      tmp->right = iterator.curptr->right;
+  } else if(tmp->left != nullptr) {
+    /************ MAKE DATA A UNIQUE_PTR (INCLUDE MEMORY) and swap data not pointers. simplifies things***********/
+
+
+  // reset links to substitute node
+//}
 
 template <class Key, class T>
 T& bst<Key,T>::operator[](Key idx) {
@@ -176,7 +210,7 @@ void bst<Key,T>::preOrder(std::function<void(const std::pair<Key,T>&)> f) {
 template <class Key, class T>
 void bst<Key,T>::preOrder(Node *curr, std::function<void(const std::pair<Key,T>&)> f) {
   if(curr != nullptr) {
-    f(curr->data);
+    f(*(curr->data));
     preOrder(curr->left, f);
     preOrder(curr->right, f);
   }
@@ -193,7 +227,7 @@ template <class Key, class T>
 void bst<Key,T>::inOrder(Node *curr, std::function<void(const std::pair<Key,T>&)> f) {
   if(curr != nullptr) {
     inOrder(curr->left, f);
-    f(curr->data);
+    f(*(curr->data));
     inOrder(curr->right, f);
   }
 }
@@ -253,10 +287,10 @@ public:
   }
 
   std::pair<Key,T>& operator*() {
-    return curptr->data;
+    return *(curptr->data);
   }
   
   std::pair<Key,T>* operator->() {
-    return &(curptr->data);
+    return curptr->data;
   }
 };
