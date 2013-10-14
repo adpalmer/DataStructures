@@ -1,10 +1,11 @@
 #include <iostream>
 #include <list>
 #include <functional>
+#include <utility> // used for std::pair
 
 // todo - constructors and destructor - must use order traversals
 
-template <class T>
+template <class Key, class T>
 class bst {
 private:
   struct Node;
@@ -12,48 +13,63 @@ private:
   unsigned int size;
 
   void clear(Node*);
-  void preOrder(Node*, std::function<void(const T&)>);
-  void inOrder(Node*, std::function<void(const T&)>);
-  void postOrder(Node*, std::function<void(const T&)>);
+  void preOrder(Node*, std::function<void(const std::pair<Key,T>&)>);
+  void inOrder(Node*, std::function<void(const std::pair<Key,T>&)>);
+  void postOrder(Node*, std::function<void(const std::pair<Key,T>&)>);
+  T& pvtInsert(const std::pair<Key,T>&);
 
 public:
   bst() : head{nullptr}, size{0} {}
   bst(const bst& other); 
   bst(bst&& other);
-  bst<T>& operator=(const bst&);
-  bst<T>& operator=(bst&&);
   ~bst();
 
-  void insert(const T&);
-  void preOrder(std::function<void(const T&)>);
-  void inOrder(std::function<void(const T&)>);
-  void postOrder(std::function<void(const T&)>);
-  std::list<T> getList();
+  class iterator;
+  iterator begin() {
+    Node *tmp = head;
+    while(tmp->left != nullptr)
+      tmp = tmp->left;
+    return iterator{tmp};
+  }
+  iterator end() { return iterator{nullptr};}
+  
+  bst<Key,T>& operator=(const bst&);
+  bst<Key,T>& operator=(bst&&);
+  T& operator[](Key idx);
+  //const T& operator[](Key idx) const;
+
+  void clear();
+  void insert(const std::pair<Key,T>&);
+  iterator find(const Key& k);
+  void preOrder(std::function<void(const std::pair<Key,T>&)>);
+  void inOrder(std::function<void(const std::pair<Key,T>&)>);
+  void postOrder(std::function<void(const std::pair<Key,T>&)>);
+  std::list<std::pair<Key,T>> getList();
 
 };
 
 
-template <class T>
-bst<T>::bst(const bst& other) {
-  other.preOrder(other.head, [this](const T& d){insert(d);});
+template <class Key, class T>
+bst<Key,T>::bst(const bst& other) {
+  preOrder(other.head, [this](const std::pair<Key,T>& d){insert(d);});
 }
 
-template <class T>
-bst<T>::bst(bst&& other) : head{other.head}, size{other.size} {
+template <class Key, class T>
+bst<Key,T>::bst(bst&& other) : head{other.head}, size{other.size} {
   other.size = 0;
   other.head = nullptr;
 }
 
-template <class T>
-bst<T>& bst<T>::operator=(const bst& rhs) {
+template <class Key, class T>
+bst<Key,T>& bst<Key,T>::operator=(const bst& rhs) {
   if(*this != rhs) {
-    rhs.preOrder(rhs.head, [this](const T& d){insert(d);});
+    rhs.preOrder(rhs.head, [this](const std::pair<Key,T>& d){insert(d);});
   }
   return *this;
 }
 
-template <class T>
-bst<T>& bst<T>::operator=(bst&& rhs) {
+template <class Key,class T>
+bst<Key,T>& bst<Key,T>::operator=(bst&& rhs) {
   if(*this != rhs) {
     head = rhs.head;
     size = rhs.size;
@@ -63,13 +79,18 @@ bst<T>& bst<T>::operator=(bst&& rhs) {
   return *this;
 }
 
-template <class T>
-bst<T>::~bst() {
+template <class Key, class T>
+bst<Key,T>::~bst() {
   clear(head);
 }
 
-template <class T>
-void bst<T>::clear(Node *tmp) {
+template <class Key, class T>
+void bst<Key,T>::clear() {
+  clear(head);
+}
+
+template <class Key, class T>
+void bst<Key,T>::clear(Node *tmp) {
   if(tmp != nullptr) {
     clear(tmp->left);
     clear(tmp->right);
@@ -79,25 +100,30 @@ void bst<T>::clear(Node *tmp) {
 
 
 // Node definition
-template <class T>
-struct bst<T>::Node {
+template <class Key, class T>
+struct bst<Key,T>::Node {
 public:
-  T data;
+  std::pair<Key, T> data;
   Node *left, *right, *parent;
 };
 
-template <class T>
-void bst<T>::insert(const T& d) {
+template <class Key, class T>
+void bst<Key,T>::insert(const std::pair<Key,T>& d) {
+  pvtInsert(d);
+}
+
+template <class Key, class T>
+T& bst<Key,T>::pvtInsert(const std::pair<Key,T>& d) {
   Node *parent = nullptr;
   Node **tmp = &head;
   while(*tmp != nullptr) {
     parent = *tmp;
-    if(d > (*tmp)->data) {
+    if(d.first > (*tmp)->data.first) {
       tmp = &((*tmp)->right);
-    } else if(d < (*tmp)->data) {
+    } else if(d.first < (*tmp)->data.first) {
       tmp = &((*tmp)->left);
-    } else {
-      return; // already exists
+    } else { // already exists
+      return ((*tmp)->data).second;
     }
   }
 
@@ -107,22 +133,48 @@ void bst<T>::insert(const T& d) {
   data->parent = parent;
   *tmp = data;
   size++;
+  return (data->data).second;
 }
 
-template <class T>
-std::list<T> bst<T>::getList() {
-  std::list<T> l;
-  inOrder(head, [&l](const T& d){l.push_back(d);});
+template <class Key, class T>
+typename bst<Key,T>::iterator bst<Key,T>::find(const Key& k) {
+  Node *tmp = head;
+  while(tmp != nullptr && k != tmp->data.first) {
+    if(k > tmp->data.first) {
+      tmp = tmp->right;
+    } else if(k < tmp->data.first) {
+      tmp = tmp->left;
+    }
+  }
+  return iterator{tmp};
+}
+
+template <class Key, class T>
+T& bst<Key,T>::operator[](Key idx) {
+  std::pair<Key,T> tmp;
+  tmp.first = idx;
+  return pvtInsert(tmp);
+}
+/*
+template <class Key, class T>
+const T& operator[](Key idx) const {
+
+}
+*/
+template <class Key, class T>
+std::list<std::pair<Key,T>> bst<Key,T>::getList() {
+  std::list<std::pair<Key,T>> l;
+  inOrder(head, [&l](const std::pair<Key,T>& d){l.push_back(d);});
   return l;
 }
 
-template <class T>
-void bst<T>::preOrder(std::function<void(const T&)> f) {
+template <class Key, class T>
+void bst<Key,T>::preOrder(std::function<void(const std::pair<Key,T>&)> f) {
   preOrder(head, f);
 }
 
-template <class T>
-void bst<T>::preOrder(Node *curr, std::function<void(const T&)> f) {
+template <class Key, class T>
+void bst<Key,T>::preOrder(Node *curr, std::function<void(const std::pair<Key,T>&)> f) {
   if(curr != nullptr) {
     f(curr->data);
     preOrder(curr->left, f);
@@ -131,14 +183,14 @@ void bst<T>::preOrder(Node *curr, std::function<void(const T&)> f) {
 }
 
 // public in order traversal
-template <class T>
-void bst<T>::inOrder(std::function<void(const T&)> f) {
+template <class Key, class T>
+void bst<Key,T>::inOrder(std::function<void(const std::pair<Key,T>&)> f) {
   inOrder(head, f);
 }
 
 // private recursive in order function that takes function pointer
-template <class T>
-void bst<T>::inOrder(Node *curr, std::function<void(const T&)> f) {
+template <class Key, class T>
+void bst<Key,T>::inOrder(Node *curr, std::function<void(const std::pair<Key,T>&)> f) {
   if(curr != nullptr) {
     inOrder(curr->left, f);
     f(curr->data);
@@ -146,16 +198,65 @@ void bst<T>::inOrder(Node *curr, std::function<void(const T&)> f) {
   }
 }
 
-template <class T>
-void bst<T>::postOrder(std::function<void(const T&)> f) { 
+template <class Key, class T>
+void bst<Key,T>::postOrder(std::function<void(const std::pair<Key,T>&)> f) { 
   postorder(head, f);
 }
 
-template <class T>
-void bst<T>::postOrder(Node *curr, std::function<void(const T&)> f) {
+template <class Key, class T>
+void bst<Key,T>::postOrder(Node *curr, std::function<void(const std::pair<Key,T>&)> f) {
   if(curr != nullptr) {
     postOrder(curr->left, f);
     postOrder(curr->right, f);
     f(curr->data);
   }
 }
+
+template <class Key, class T>
+class bst<Key,T>::iterator : public std::iterator<std::forward_iterator_tag, std::pair<Key,T>> {
+protected:
+  friend class bst;
+  Node *curptr;
+public:
+  iterator() : curptr{nullptr} {}
+  iterator(Node *p) : curptr{p} {}
+  iterator(const iterator& it) : curptr{it.curptr}{}
+  ~iterator() {}
+  iterator& operator=(const iterator& other) {
+    curptr = other.curptr;
+    return *this;
+  }
+  bool operator==(const iterator& other) {return curptr == other.curptr;}
+  bool operator!=(const iterator& other) {return !(*this == other); }
+  
+  iterator& operator++() {
+    if(curptr != nullptr) {
+      if(curptr->right != nullptr) {
+        curptr = curptr->right;
+        while(curptr->left != nullptr) {
+          curptr = curptr->left;
+        }
+      } else if(curptr->parent->left == curptr) {
+        curptr = curptr->parent;
+      } else {
+        while(curptr != nullptr)
+          curptr = curptr->parent;
+      }
+    }
+    return *this;
+  }
+
+  iterator& operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  std::pair<Key,T>& operator*() {
+    return curptr->data;
+  }
+  
+  std::pair<Key,T>* operator->() {
+    return &(curptr->data);
+  }
+};
