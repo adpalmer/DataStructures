@@ -272,11 +272,11 @@ public:
         while(curptr->left != nullptr) {
           curptr = curptr->left;
         }
-      } else if(curptr->parent->left == curptr) {
-        curptr = curptr->parent;
       } else {
-        while(curptr != nullptr)
+        while(curptr && curptr->parent && curptr->parent->right == curptr) {
           curptr = curptr->parent;
+        }
+        curptr = curptr->parent;
       }
     }
     return *this;
