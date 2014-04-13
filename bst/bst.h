@@ -64,15 +64,17 @@ bst<Key,T>::bst(bst&& other) : head{other.head}, size{other.size} {
 
 template <class Key, class T>
 bst<Key,T>& bst<Key,T>::operator=(const bst& rhs) {
-  if(*this != rhs) {
-    rhs.preOrder(rhs.head, [this](const std::pair<Key,T>& d){insert(d);});
+  if(this != &rhs) {
+    clear();
+    preOrder(rhs.head, [this](const std::pair<Key,T>& d){insert(d);});
   }
   return *this;
 }
 
 template <class Key,class T>
 bst<Key,T>& bst<Key,T>::operator=(bst&& rhs) {
-  if(*this != rhs) {
+  if(this != &rhs) {
+    clear();
     head = rhs.head;
     size = rhs.size;
     rhs.head = nullptr;
@@ -161,29 +163,6 @@ typename bst<Key,T>::iterator bst<Key,T>::find(const Key& k) {
   return iterator{tmp};
 }
 
-/*
-template <class Key, class T>
-typename bst<Key,T>::iterator bst<Key,T>::erase(const bst<Key,T>::iterator& it) {
-  Node *tmp = iterator.curptr;
-  Node *trail;
-  if(tmp->left != nullptr && tmp->right != nullptr) {
-    tmp = tmp->right;
-    while(tmp->left != nullptr) {
-      trail = tmp;
-      tmp = tmp->left;
-    }
-    trail->left = nullptr;
-    tmp->parent = iterator.curptr->parent;
-    tmp->left = iterator.curptr->left;
-    tmp->right = nullptr;
-    if(iterator.curptr->right != tmp)
-      tmp->right = iterator.curptr->right;
-  } else if(tmp->left != nullptr) {
-    /************ MAKE DATA A UNIQUE_PTR (INCLUDE MEMORY) and swap data not pointers. simplifies things***********/
-
-
-  // reset links to substitute node
-//}
 
 template <class Key, class T>
 T& bst<Key,T>::operator[](Key idx) {
@@ -191,12 +170,7 @@ T& bst<Key,T>::operator[](Key idx) {
   tmp.first = idx;
   return pvtInsert(tmp);
 }
-/*
-template <class Key, class T>
-const T& operator[](Key idx) const {
 
-}
-*/
 template <class Key, class T>
 std::list<std::pair<Key,T>> bst<Key,T>::getList() {
   std::list<std::pair<Key,T>> l;
